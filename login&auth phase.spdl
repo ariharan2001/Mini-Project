@@ -1,0 +1,133 @@
+/*
+  Authentication phase of proposed protocol
+*/
+
+hashfunction h;
+
+const XOR: Function;
+const Delta : Function;
+const IsSame : Function;
+
+usertype Timestamp;
+
+secret Threshold : Nonce;
+
+protocol  authentication ( U , G , S ) {
+
+	role U 
+	{
+	    const UID, UPW, V,IDsn;
+	    var T4, T5, Vu2, IDsn2, d;
+	    fresh a : Nonce;
+	    const r1 : Nonce;
+	    const r2 : Nonce;  
+	    fresh T1 : Timestamp;
+            /*
+		parameteres ( HID, VU1, T1, a, IDsn)
+		HID = hash(UID, r1)
+		VU1  = hash( V xor HPW || a )
+		T1    =  Timestamp
+		IDsn  = Id of sensor
+	    */
+	    send_1(U, G,  {h( UID, r1 ), h(XOR(V,UPW),a),T1,a,IDsn }pk(G));
+
+	   recv_4(G,U,{Vu2,IDsn2,T4,d}pk(U));
+
+	   /* choose the fifth tiimestamp value */
+	   recv_!T7(U,U,T5);
+
+	  /* check the period between second and third time stamps */
+	  recv_!T8(U,U,Delta(T5,T4,Threshold));
+
+	  recv_!C4(U, U, IsSame(Vu2, h(XOR(V,UPW),d,IDsn2)));
+	  
+          claim_U1(U, Secret, UID);
+	  claim_U2(U, Secret, UPW);
+          claim_U3(U, Alive);
+          claim_U4(U, Weakagree);
+	  claim_U5(U, Nisynch);
+          claim_U6(U, Niagree);
+
+        }
+
+	role G 
+	{
+	    const XGW,VU,KGsn;
+	    var HID, VU1, T1, T2, IDsn,a;
+            var Vsn2, IDsn2, T3, T4, c;
+	    fresh r3 : Nonce;
+	    fresh b : Nonce;
+	    fresh d : Nonce;
+
+	    recv_1(U, G, {HID , VU1, T1,  a,IDsn }pk(G));
+
+            /* choose the second timestamp value */
+	    recv_!T1(G,G,T2);
+
+	    /* check the period between first and second time stamps  */
+	    recv_!T2(G,G,Delta(T2,T1,Threshold));
+
+	   /* check whether VU1 is valid */
+           recv_!C1(G,G,IsSame(VU, h(h(XGW,r3),a) ));
+
+	   /* 
+		parameter (Vsn1, HID, T2, b)
+	        Vsn1 = hash( HID || IDsn || T2 || b || KGsn)
+	   */
+	   send_2(G, S, {h(HID,IDsn,T2,b,KGsn),HID,T2,b}pk(S));
+
+	   recv_3(S, G,{Vsn2,IDsn2,T3,c}pk(G));
+
+            /* choose the fourth tiimestamp value */
+	    recv_!T5(G,G,T4);
+
+	    /* check the period between second and third time stamps */
+	    recv_!T6(G,G,Delta(T4,T3,Threshold));
+	 
+	    recv_!C3(G,G,IsSame(Vsn2, h(HID,IDsn2,T3,c,KGsn)));
+
+	  /* 
+		parameter (Vu2, IDsn, T4, c)
+	        Vu2 = hash(  hash(XGW || r3) || d || IDsn2 )
+	   */
+	   send_4(G, U, {h(h(XGW,r3),d,IDsn2),IDsn2,T4,c}pk(U));	
+
+	   claim_G1(G, Secret, XGW);
+           claim_G2(G, Alive);
+           claim_G3(G, Weakagree);
+	   claim_G4(G, Nisynch);
+           claim_G5(G, Niagree);
+
+         }
+
+	role S
+	{
+	    const KGsn,IDsn;
+	    var Vsn,HID,T2,T3,b;
+	    recv_2(G, S, {Vsn,HID,T2,b}pk(S));
+	    fresh c : Nonce;
+
+            /* choose the third tiimestamp value */
+	    recv_!T3(S,S,T3);
+
+	    /* check the period between second and third time stamps */
+	    recv_!T4(S,S,Delta(T3,T2,Threshold));
+
+	   /* check whether Vsn is valid */
+	   recv_!C2(S,S,IsSame(Vsn,h(HID,IDsn,T2,b,KGsn)));
+
+	  /* 
+		parameter (Vsn2, IDsn, T3, c)
+	        Vsn2 = hash( HID || IDsn || T3 || c || KGsn)
+	   */
+	   send_3(S, G, {h(HID,IDsn,T3,c,KGsn),IDsn,T3,c}pk(G));
+
+	   claim_S1(S,Secret,KGsn);
+           claim_S2(S, Alive);
+           claim_S3(S, Weakagree);
+	   claim_S4(S, Nisynch);
+           claim_S5(S, Niagree);
+
+	}
+
+}

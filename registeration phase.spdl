@@ -1,0 +1,31 @@
+/*
+  Registration phase of proposed protocol
+*/
+
+hashfunction H;
+const XOR: Function;
+
+protocol  register ( U , G ) {
+	role U 
+	{
+	    const ClientID, ClientPW;
+	    var V;
+	    fresh r1 : Nonce;
+	    fresh r2 : Nonce;  
+	    send_1(U, G,  {H( ClientID, r1 )}pk(G), {H( ClientID, ClientPW, r2 )}pk(G));
+	    recv_2(G, U, {V,ClientID}pk(U));
+	    claim_U1(U,Secret,V);
+            claim_U2(U,Secret,ClientPW);
+        }
+
+	role G 
+	{	   
+	    const XGW;
+	    var HID, HPW;
+	    fresh r3 : Nonce;
+	    recv_1(U, G, {HID}pk(G), {HPW}pk(G));
+	    send_2(G, U, {XOR ( H(XGW, r3), HPW),HID}pk(U));
+            claim_G1(G,Secret,XGW);
+            claim_G2(G,Secret,r3);  
+	}
+}
